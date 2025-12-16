@@ -1,0 +1,11 @@
+<library path="mypanel">
+  <!-- 定义库中的类 -->
+ <class name="rviz2_custom_panel/Rviz2Panel"
+        type="rviz2_custom_panel::Rviz2Panel"
+        base_class_type="rviz_common::Panel">
+    <!-- 类的描述 -->
+   <description>
+     Rviz2 Panel
+   </description>
+ </class>
+</library> 
