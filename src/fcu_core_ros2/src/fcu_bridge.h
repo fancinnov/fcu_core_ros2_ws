@@ -82,6 +82,7 @@ public:
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gnss_sub;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr mission_sub;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr motion_sub;
 
     nav_msgs::msg::Odometry odom_pub;
     sensor_msgs::msg::Imu imu_pub;
@@ -104,6 +105,7 @@ public:
     rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr command;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr batt;
+    
 
 	inline void init() {
 		mav_chan_ = static_cast<mavlink_channel_t>(channel_);

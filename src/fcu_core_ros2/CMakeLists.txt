@@ -14,6 +14,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(quadrotor_msgs REQUIRED)
 
 add_executable(fcu_bridge_001 src/fcu_bridge_001.cpp)
 add_executable(fcu_bridge_002 src/fcu_bridge_002.cpp)
@@ -31,6 +32,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_001
@@ -44,6 +46,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_002
@@ -57,6 +60,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_003
@@ -70,6 +74,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_004
@@ -83,6 +88,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_005
@@ -96,6 +102,7 @@ ament_target_dependencies(
   "sensor_msgs"
   "geometry_msgs"
   "nav_msgs"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_bridge_006
@@ -121,6 +128,7 @@ ament_target_dependencies(
   "nav_msgs"
   "tf2"
   "tf2_ros"
+  "quadrotor_msgs"
 )
 
 install(TARGETS fcu_mission

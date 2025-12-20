@@ -1,0 +1,13 @@
+std_msgs/Header header
+bool pos_x
+bool pos_y
+bool pos_z
+bool vel_x
+bool vel_y
+bool vel_z
+bool roll
+bool pitch
+bool yaw
+bool avl_x
+bool avl_y
+bool avl_z

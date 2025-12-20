@@ -8,7 +8,9 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2/LinearMath/Quaternion.h>
+#include <quadrotor_msgs/msg/position_command.hpp>
 #include "../mavlink/common/mavlink.h"
+
 /**
  * 注意：工程中mission_xxx话题为发给飞控的目标值，目标位移应为FRU坐标系，目标姿态应为FRD坐标系
  */
@@ -549,6 +551,92 @@ void odom_global006_handler(const nav_msgs::msg::Odometry::SharedPtr odom)
   pos_odom_006_yaw=-pos_odom_006_yaw;
 }
 
+void pos_cmd_handler(const quadrotor_msgs::msg::PositionCommand::SharedPtr pose_plan)
+{
+  if(follow_forward||follow_down){
+    return;
+  }
+  //发布mission
+  /**
+ * 注意：工程中/fcu_bridge/mission_xxx话题为发给飞控的目标值，目标位移应为FRU坐标系，目标姿态应为FRD坐标系
+ */
+  get_pos_cmd=true;
+  mission_001.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
+  mission_001.layout.dim[0].label = "mission_001";
+  mission_001.layout.dim[0].size = 11;
+  mission_001.layout.dim[0].stride = 1;
+  mission_001.data.resize(11);
+  mission_001.data[0]=-pose_plan->yaw;//rad
+  mission_001.data[1]=-pose_plan->yaw_dot;//rad/s
+  mission_001.data[2]=pose_plan->position.x;//x
+  mission_001.data[3]=-pose_plan->position.y;//y
+  mission_001.data[4]=pose_plan->position.z;//z
+  mission_001.data[5]=pose_plan->velocity.x;//vx
+  mission_001.data[6]=-pose_plan->velocity.y;//vy
+  mission_001.data[7]=pose_plan->velocity.z;//vz
+  mission_001.data[8]=pose_plan->acceleration.x;//ax
+  mission_001.data[9]=-pose_plan->acceleration.y;//ay
+  mission_001.data[10]=pose_plan->acceleration.z;//az
+  mission_pub_001->publish(mission_001);
+}
+
+void follow_handler(const std_msgs::msg::Float32MultiArray::SharedPtr follow)
+{
+  if(follow_forward){
+    get_pos_cmd=true;
+    //发布mission
+    if(follow->data[2]==0.0f&&follow->data[3]==0.0f){
+      printf("No tracking!\n");
+      return;
+    }
+    float global_dx = follow->data[2] * cosf(pos_odom_001_yaw) - follow->data[3] * sinf(pos_odom_001_yaw);
+    float global_dy = follow->data[2] * sinf(pos_odom_001_yaw) + follow->data[3] * cosf(pos_odom_001_yaw);
+    mission_001.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
+    mission_001.layout.dim[0].label = "mission_001";
+    mission_001.layout.dim[0].size = 11;
+    mission_001.layout.dim[0].stride = 1;
+    mission_001.data.resize(11);
+    mission_001.data[0]=pos_odom_001_yaw+follow->data[0];//rad
+    mission_001.data[1]=0.0f;//rad/s
+    mission_001.data[2]=pos_odom_001_x+global_dx;//x
+    mission_001.data[3]=pos_odom_001_y+global_dy;//y
+    mission_001.data[4]=0.0f;//z
+    mission_001.data[5]=0.0f;//vx
+    mission_001.data[6]=0.0f;//vy
+    mission_001.data[7]=0.0f;//vz
+    mission_001.data[8]=0.0f;//ax
+    mission_001.data[9]=0.0f;//ay
+    mission_001.data[10]=0.0f;//az
+    mission_pub_001->publish(mission_001); 
+  }else if(follow_down){
+    get_pos_cmd=true;
+    //发布mission
+    if(follow->data[2]==0.0f&&follow->data[3]==0.0f){
+      printf("No tracking!\n");
+      return;
+    }
+    float global_dx = follow->data[2] * cosf(pos_odom_001_yaw) - follow->data[3] * sinf(pos_odom_001_yaw);
+    float global_dy = follow->data[2] * sinf(pos_odom_001_yaw) + follow->data[3] * cosf(pos_odom_001_yaw);
+    mission_001.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
+    mission_001.layout.dim[0].label = "mission_001";
+    mission_001.layout.dim[0].size = 11;
+    mission_001.layout.dim[0].stride = 1;
+    mission_001.data.resize(11);
+    mission_001.data[0]=0.0f;//rad
+    mission_001.data[1]=0.0f;//rad/s
+    mission_001.data[2]=pos_odom_001_x+global_dx;//x
+    mission_001.data[3]=pos_odom_001_y+global_dy;//y
+    mission_001.data[4]=0.0f;//z
+    mission_001.data[5]=0.0f;//vx
+    mission_001.data[6]=0.0f;//vy
+    mission_001.data[7]=0.0f;//vz
+    mission_001.data[8]=0.0f;//ax
+    mission_001.data[9]=0.0f;//ay
+    mission_001.data[10]=0.0f;//az
+    mission_pub_001->publish(mission_001);
+  }
+}
+
 int main(int argc, char **argv) 
 {
     rclcpp::init(argc,argv);
@@ -561,7 +649,8 @@ int main(int argc, char **argv)
     auto odom004 = node->create_subscription<nav_msgs::msg::Odometry>("odom_global_004", 100, odom_global004_handler);
     auto odom005 = node->create_subscription<nav_msgs::msg::Odometry>("odom_global_005", 100, odom_global005_handler);
     auto odom006 = node->create_subscription<nav_msgs::msg::Odometry>("odom_global_006", 100, odom_global006_handler);
-
+    auto pos_cmd = node->create_subscription<quadrotor_msgs::msg::PositionCommand>("pos_cmd", 100, pos_cmd_handler);
+    auto mission_follow = node->create_subscription<std_msgs::msg::Float32MultiArray>("mission_follow", 100, follow_handler);
 
     mission_pub_001 = node->create_publisher<std_msgs::msg::Float32MultiArray>("mission_001", 100);
     mission_pub_002 = node->create_publisher<std_msgs::msg::Float32MultiArray>("mission_002", 100);

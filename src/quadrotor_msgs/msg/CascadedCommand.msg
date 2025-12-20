@@ -1,0 +1,8 @@
+Header header
+float64 current_heading
+float64 thrust
+geometry_msgs/Quaternion orientation
+geometry_msgs/Vector3 angular_velocity
+geometry_msgs/Vector3 angular_acceleration
+geometry_msgs/Vector3 kR
+geometry_msgs/Vector3 kOm

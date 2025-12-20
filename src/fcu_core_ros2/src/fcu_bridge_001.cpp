@@ -264,6 +264,41 @@ public:
       mavlink_msg_set_gps_global_origin_encode(mavlink_system_.sysid, mavlink_system_.compid, &msg_gnss_origin, &gps_global_origin_);
       mavlink_send_msg(mav_chan_, &msg_gnss_origin);
     }
+    void motionHandler(const geometry_msgs::msg::PoseStamped::SharedPtr odom)
+    {
+      if(time_odom_<=time_start_||mav_chan_ == MAVLINK_COMM_0){//USB传输无需降频
+        time_odom_=rclcpp::Clock().now().seconds();
+      }else{
+        if(rclcpp::Clock().now().seconds()-time_odom_<0.1){//用网络通信，如果odom频率过高进行降频，降至10hz以下
+          return;
+        }
+        time_odom_=rclcpp::Clock().now().seconds();
+      }
+
+      Eigen::Vector3f position_map ((float)odom->pose.position.x, -(float)odom->pose.position.y, -(float)odom->pose.position.z) ;
+      float quaternion_odom[4]={(float)odom->pose.orientation.w,
+                                (float)odom->pose.orientation.x,
+                                (float)odom->pose.orientation.y,
+                                (float)odom->pose.orientation.z};
+
+      float roll, pitch, yaw;
+      mavlink_quaternion_to_euler(quaternion_odom, &roll, &pitch, &yaw);
+      printf("x:%f,y:%f,z:%f,yaw:%f\n",position_map.x(),position_map.y(),position_map.z(),yaw);
+      //动捕一般为前左上坐标系，需要改为前右下坐标系发给飞控
+      mavlink_message_t msg_local_position_ned, msg_attitude;
+      mavlink_attitude_t attitude;
+      mavlink_local_position_ned_t local_position_ned;
+
+      attitude.yaw = -yaw;
+      mavlink_msg_attitude_encode(mavlink_system_.sysid, mavlink_system_.compid, &msg_attitude, &attitude);
+      mavlink_send_msg(mav_chan_, &msg_attitude);
+
+      local_position_ned.x=position_map.x();
+      local_position_ned.y=position_map.y();
+      local_position_ned.z=position_map.z();
+      mavlink_msg_local_position_ned_encode(mavlink_system_.sysid, mavlink_system_.compid, &msg_local_position_ned, &local_position_ned);
+      mavlink_send_msg(mav_chan_, &msg_local_position_ned);
+    }
 };
 
 int main (int argc,char ** argv)
@@ -304,6 +339,8 @@ int main (int argc,char ** argv)
       "odometry_001", 100, std::bind(&fcu_bridge_001::odomHandler, fcu_bridge_instance, std::placeholders::_1));
     fcu_bridge_instance->mission_sub = fcu_bridge_instance->node->create_subscription<std_msgs::msg::Float32MultiArray>(
       "mission_001", 100, std::bind(&fcu_bridge_001::missionHandler, fcu_bridge_instance, std::placeholders::_1));
+    fcu_bridge_instance->motion_sub = fcu_bridge_instance->node->create_subscription<geometry_msgs::msg::PoseStamped>(
+      "motion_001", 100, std::bind(&fcu_bridge_001::motionHandler, fcu_bridge_instance, std::placeholders::_1));
     fcu_bridge_instance->odom_global = fcu_bridge_instance->node->create_publisher<nav_msgs::msg::Odometry>("odom_global_001", 100);
     fcu_bridge_instance->imu_global = fcu_bridge_instance->node->create_publisher<sensor_msgs::msg::Imu>("imu_global_001", 100);
     fcu_bridge_instance->gnss_global = fcu_bridge_instance->node->create_publisher<sensor_msgs::msg::NavSatFix>("gnss_global_001", 100);
@@ -312,7 +349,7 @@ int main (int argc,char ** argv)
     fcu_bridge_instance->command = fcu_bridge_instance->node->create_publisher<std_msgs::msg::Int16>("command", 100);
     fcu_bridge_instance->goal = fcu_bridge_instance->node->create_publisher<geometry_msgs::msg::PoseStamped>("goal_001", 100);
     fcu_bridge_instance->batt = fcu_bridge_instance->node->create_publisher<std_msgs::msg::Float32>("batt_now_001", 100);
-
+    
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     if(fcu_bridge_instance->set_goal_){
