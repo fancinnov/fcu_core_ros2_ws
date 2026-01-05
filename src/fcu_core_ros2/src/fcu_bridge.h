@@ -18,6 +18,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <serial/serial.h>
 #include "../mavlink/common/mavlink.h"
 #include "./ringbuffer.h"
 
@@ -40,6 +41,7 @@ public:
     std::string drone_ip_;
     std::string usb_port_;
     int baudrate_;
+    serial::Serial ser_;
 
     // Converted member variables from globals
     int channel_;
@@ -116,6 +118,7 @@ public:
         RCLCPP_INFO(node->get_logger(),"fcu_bridge %03d init done",drone_id);
 	}
 
+    int serial_connect();
     int wifi_connect();
     void mav_send_heartbeat(void);
     void mav_send_arm();
@@ -139,6 +142,31 @@ public:
     virtual void flush_data() = 0;
     virtual void parse_data() = 0;
 };
+
+int fcu_bridge::serial_connect() {
+    try{
+    //设置串口属性，并打开串口
+        ser_.setPort(usb_port_.c_str());
+        ser_.setBaudrate(baudrate_);
+        serial::Timeout to = serial::Timeout::simpleTimeout(5000);
+        ser_.setTimeout(to);
+        ser_.open();
+    }catch (serial::IOException& e)
+    {
+        printf("Unable to open port \n");
+        return -1;
+    }
+
+    //检测串口是否已经打开，并给出提示信息
+    if(ser_.isOpen())
+    {
+        printf("Serial Port initialized\n");
+    }
+    else
+    {
+        return -1;
+    }
+}
 
 int fcu_bridge::wifi_connect() {
     socket_cli_ = socket(AF_INET, SOCK_STREAM, 0);

@@ -12,6 +12,7 @@ public:
             TxBuffer_buf_[i]=rbPop(&mav_buf_send_);
           }
           if (mav_chan_ == MAVLINK_COMM_0){
+            ser_.write(TxBuffer_buf_,length);
           }else{
             send(socket_cli_, TxBuffer_buf_, length, 0);
           }
@@ -82,9 +83,9 @@ public:
                   imu_pub.angular_velocity.y = -(double)imu_.ygyro/1000;
                   imu_pub.angular_velocity.z = -(double)imu_.zgyro/1000;
                   imu_global->publish(imu_pub);
-                  RCLCPP_INFO(node->get_logger(),"acc0,acc1,acc2,gyr0,gyr1,gyr2: %f %f %f %f %f %f\n",
-                      (double)imu_.xacc/1000,-(double)imu_.yacc/1000,-(double)imu_.zacc/1000,
-                      (double)imu_.xgyro/1000,-(double)imu_.ygyro/1000,-(double)imu_.zgyro/1000);
+                  // RCLCPP_INFO(node->get_logger(),"acc0,acc1,acc2,gyr0,gyr1,gyr2: %f %f %f %f %f %f\n",
+                  //     (double)imu_.xacc/1000,-(double)imu_.yacc/1000,-(double)imu_.zacc/1000,
+                  //     (double)imu_.xgyro/1000,-(double)imu_.ygyro/1000,-(double)imu_.zgyro/1000);
                   break;
                 case	MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
                   // RCLCPP_INFO(node->get_logger(),"MAVLINK_MSG_ID_GLOBAL_POSITION_INT");
@@ -283,7 +284,7 @@ public:
 
       float roll, pitch, yaw;
       mavlink_quaternion_to_euler(quaternion_odom, &roll, &pitch, &yaw);
-      printf("x:%f,y:%f,z:%f,yaw:%f\n",position_map.x(),position_map.y(),position_map.z(),yaw);
+      // printf("x:%f,y:%f,z:%f,yaw:%f\n",position_map.x(),position_map.y(),position_map.z(),yaw);
       //动捕一般为前左上坐标系，需要改为前右下坐标系发给飞控
       mavlink_message_t msg_local_position_ned, msg_attitude;
       mavlink_attitude_t attitude;
@@ -361,13 +362,28 @@ int main (int argc,char ** argv)
       fcu_bridge_instance->command->publish(fcu_bridge_instance->cmd_pub);
     }
 
-    fcu_bridge_instance->wifi_connect();
+    if(fcu_bridge_instance->channel_==0){
+      fcu_bridge_instance->serial_connect();
+    }
+    else if (fcu_bridge_instance->channel_==1){
+      fcu_bridge_instance->wifi_connect();
+    }
 
     fcu_bridge_instance->time_start_ = rclcpp::Clock().now().seconds();
     
+    int n = 0;
+
     while (rclcpp::ok()) {
       rclcpp::spin_some(fcu_bridge_instance->node);
-      int n = recv(fcu_bridge_instance->socket_cli_, fcu_bridge_instance->buffer_, sizeof(fcu_bridge_instance->buffer_), 0);
+      if (fcu_bridge_instance->channel_==0){
+        n=fcu_bridge_instance->ser_.available();
+        if(n){
+          fcu_bridge_instance->ser_.read(fcu_bridge_instance->buffer_, n);
+        }
+      }
+      else if (fcu_bridge_instance->channel_==1){
+        n = recv(fcu_bridge_instance->socket_cli_, fcu_bridge_instance->buffer_, sizeof(fcu_bridge_instance->buffer_), 0);
+      }
       if(n > 0) {
           for(uint16_t i = 0; i < n; i++) {
               rbPush(&fcu_bridge_instance->mav_buf_receive_, fcu_bridge_instance->buffer_[i]);
@@ -377,7 +393,7 @@ int main (int argc,char ** argv)
       fcu_bridge_instance->flush_data();
       loop_rate.sleep();
     }
-
+    fcu_bridge_instance->ser_.close();
     close(fcu_bridge_instance->socket_cli_);
 
     RCLCPP_INFO(fcu_bridge_instance->node->get_logger(),"hello world!");

@@ -4,13 +4,19 @@ Ubuntu 64-bit 22.04.
 ROS Humble. [ROS2 Installation](https://docs.ros.org/en/humble/)
 
 ### 1.2. **serial**
-sudo apt install ros-humble-serial-driver
+cd fcu_core_ros2_ws/src/serial_ros2
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
 
 ### 1.3. **eigen**
 sudo apt-get install libeigen3-dev
 
-## 在fcu_core_ros2_ws中打开终端
 ## 2. Build
+cd fcu_core_ros2_ws
+colcon build --packages-select quadrotor_msgs
+source install/setup.bash
 colcon build
 
 ## 3. Source

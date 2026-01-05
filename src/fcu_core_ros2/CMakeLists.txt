@@ -25,6 +25,11 @@ add_executable(fcu_bridge_006 src/fcu_bridge_006.cpp)
 add_executable(fcu_command src/fcu_command.cpp)
 add_executable(fcu_mission src/fcu_mission.cpp)
 
+find_path(SERIAL_INCLUDE_DIR serial/serial.h)
+find_library(SERIAL_LIBRARY serial)
+
+include_directories(${SERIAL_INCLUDE_DIR})
+
 ament_target_dependencies(
   fcu_bridge_001
   "rclcpp"
@@ -34,6 +39,8 @@ ament_target_dependencies(
   "nav_msgs"
   "quadrotor_msgs"
 )
+
+target_link_libraries(fcu_bridge_001 ${SERIAL_LIBRARY})
 
 install(TARGETS fcu_bridge_001
   DESTINATION lib/${PROJECT_NAME}
@@ -49,6 +56,8 @@ ament_target_dependencies(
   "quadrotor_msgs"
 )
 
+target_link_libraries(fcu_bridge_002 ${SERIAL_LIBRARY})
+
 install(TARGETS fcu_bridge_002
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -62,6 +71,8 @@ ament_target_dependencies(
   "nav_msgs"
   "quadrotor_msgs"
 )
+
+target_link_libraries(fcu_bridge_003 ${SERIAL_LIBRARY})
 
 install(TARGETS fcu_bridge_003
   DESTINATION lib/${PROJECT_NAME}
@@ -77,6 +88,8 @@ ament_target_dependencies(
   "quadrotor_msgs"
 )
 
+target_link_libraries(fcu_bridge_004 ${SERIAL_LIBRARY})
+
 install(TARGETS fcu_bridge_004
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -91,6 +104,8 @@ ament_target_dependencies(
   "quadrotor_msgs"
 )
 
+target_link_libraries(fcu_bridge_005 ${SERIAL_LIBRARY})
+
 install(TARGETS fcu_bridge_005
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -104,6 +119,8 @@ ament_target_dependencies(
   "nav_msgs"
   "quadrotor_msgs"
 )
+
+target_link_libraries(fcu_bridge_006 ${SERIAL_LIBRARY})
 
 install(TARGETS fcu_bridge_006
   DESTINATION lib/${PROJECT_NAME}
